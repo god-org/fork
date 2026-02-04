@@ -1,0 +1,128 @@
+name: Fork
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TZ: Asia/Shanghai
+
+jobs:
+  fork:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出当前仓库代码
+        uses: actions/checkout@v6
+
+      - name: 自动同步所有 Fork 仓库
+        run: |
+          OWNERS=(zzzzzzqqq8 dog-org)
+
+          echo "### 🔄 同步任务汇总" >> $GITHUB_STEP_SUMMARY
+          echo "| 仓库 | 分支 | 状态 | 详情 |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+
+          SUCCESS_REPOS=()
+          SKIPPED_REPOS=()
+          FAILED_REPOS=()
+
+          for user in "${OWNERS[@]}"; do
+            echo "🔎 正在处理用户：$user"
+
+            case "$user" in
+              zzzzzzqqq8) export GH_TOKEN=${{ secrets.ZZQ_TOKEN }} ;;
+              dog-org) export GH_TOKEN=${{ secrets.DOG_TOKEN }} ;;
+              *) continue ;;
+            esac
+
+            while read -r row; do
+              [[ -z "$row" ]] && continue
+              repo_name=${row%,*}
+              branch=${row#*,}
+
+              echo "🚀 正在同步 $repo_name [ $branch ]..."
+
+              response=$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
+                -X POST \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                https://api.github.com/repos/$repo_name/merge-upstream \
+                -d "{\"branch\":\"$branch\"}")
+
+              case $response in
+                200|202)
+                  status="✅ 成功"
+                  msg="同步成功"
+                  SUCCESS_REPOS+=("$repo_name")
+                  ;;
+                409)
+                  status="⚠️ 跳过"
+                  msg="已是最新"
+                  SKIPPED_REPOS+=("$repo_name")
+                  ;;
+                *)
+                  status="❌ 失败"
+                  msg=$(jq -r '.message' /tmp/resp.json 2>/dev/null || echo "HTTP $response")
+                  FAILED_REPOS+=("$repo_name ($msg)")
+                  ;;
+              esac
+
+              echo "| $repo_name | $branch | $status | $msg |" >> $GITHUB_STEP_SUMMARY
+
+            done < <(gh repo list $user --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
+          done
+
+          MSG=""
+
+          function add_msg_block() {
+            local icon="$1"
+            local title="$2"
+            local -n arr="$3"
+
+            [[ ${#arr[@]} -eq 0 ]] && return
+
+            MSG="${MSG}"$'\n'"<b>${icon} ${title} ( ${#arr[@]} ):</b>"
+
+            for repo in "${arr[@]}"; do
+              MSG="${MSG}"$'\n'"• <code>$repo</code>"
+            done
+          }
+
+          add_msg_block "✅" "成功" SUCCESS_REPOS
+          add_msg_block "⚠️" "跳过" SKIPPED_REPOS
+          add_msg_block "❌" "失败" FAILED_REPOS
+
+          [[ -z "$MSG" ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
+
+          {
+            echo "TG_MSG<<EOF"
+            echo -e "$MSG"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: 发送同步结果至 Telegram
+        uses: appleboy/telegram-action@v1.0.1
+        if: always()
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          message: |
+            <b>🚀 Fork 同步报告</b>
+            ${{ env.TG_MSG }}
+
+            <b>📦 项目信息</b>
+            仓库：<code>${{ github.repository }}</code>
+            分支：<code>${{ github.ref_name }}</code>
+            编号：<code>${{ github.run_number }}</code>
+
+            <b>👤 触发信息</b>
+            账号：<code>${{ github.actor }}</code>
+            触发：<code>${{ github.event_name }}</code>
+            哈希：<code>${{ github.sha }}</code>
+
+            <b>🔗 快速链接</b>
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">📋 查看完整日志</a>
+            <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">💻 查看代码变更</a>
