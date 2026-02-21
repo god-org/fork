@@ -51,7 +51,7 @@ jobs:
                 https://api.github.com/repos/$repo_name/merge-upstream \
                 -d "{\"branch\":\"$branch\"}")
 
-              case $response in
+              case "$response" in
                 200|202)
                   status="✅ 成功"
                   msg="同步成功"
