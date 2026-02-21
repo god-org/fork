@@ -64,7 +64,7 @@ jobs:
                   ;;
                 *)
                   status="❌ 失败"
-                  msg=$(jq -r '.message' /tmp/resp.json 2>/dev/null || echo "HTTP $response")
+                  msg="$(jq -r '.message' /tmp/resp.json 2>/dev/null || echo "HTTP $response")"
                   FAILED_REPOS+=("$repo_name ($msg)")
                   ;;
               esac
