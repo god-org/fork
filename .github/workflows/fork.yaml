@@ -87,7 +87,7 @@ jobs:
             MSG="${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>"
 
             for repo in ${arr[@]}; do
-              MSG=${MSG}$'\n'• <code>$repo</code>
+              MSG="${MSG}$'\n'• <code>$repo</code>"
             done
           }
 
@@ -95,7 +95,7 @@ jobs:
           add_msg_block "⚠️" "跳过" SKIPPED_REPOS
           add_msg_block "❌" "失败" FAILED_REPOS
 
-          [[ -z $MSG ]] && MSG=$'\n'<b>⚠️ 本次无同步任务执行</b>
+          [[ -z $MSG ]] && MSG="$'\n'<b>⚠️ 本次无同步任务执行</b>"
 
           printf "TG_MSG<<EOF\n%b\nEOF\n" $MSG >>$GITHUB_ENV
 
