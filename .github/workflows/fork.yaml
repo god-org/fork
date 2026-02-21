@@ -84,7 +84,7 @@ jobs:
 
             [[ ${#arr[@]} -eq 0 ]] && return
 
-            MSG=${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>
+            MSG="${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>"
 
             for repo in ${arr[@]}; do
               MSG=${MSG}$'\n'• <code>$repo</code>
