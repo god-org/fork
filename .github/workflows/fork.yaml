@@ -19,7 +19,6 @@ jobs:
 
       - name: 自动同步所有 Fork 仓库
         run: |
-          set -x
           OWNERS=(zzzzzzqqq8 dog-org)
 
           echo "### 🔄 同步任务汇总" >>$GITHUB_STEP_SUMMARY
@@ -56,12 +55,12 @@ jobs:
                 200|202)
                   status="✅ 成功"
                   msg="同步成功"
-                  SUCCESS_REPOS+=($repo_name)
+                  SUCCESS_REPOS+=("$repo_name")
                   ;;
                 409)
                   status="⚠️ 跳过"
                   msg="已是最新"
-                  SKIPPED_REPOS+=($repo_name)
+                  SKIPPED_REPOS+=("$repo_name")
                   ;;
                 *)
                   status="❌ 失败"
@@ -95,7 +94,7 @@ jobs:
           add_msg_block "⚠️" "跳过" SKIPPED_REPOS
           add_msg_block "❌" "失败" FAILED_REPOS
 
-          [[ -z $MSG ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
+          [[ -z "$MSG" ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
 
           printf "TG_MSG<<EOF\n%b\nEOF\n" "$MSG" >>$GITHUB_ENV
 
