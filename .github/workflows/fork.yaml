@@ -74,19 +74,19 @@ jobs:
             done < <(gh repo list "$user" --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
           done
 
-          MSG=""
+          MSG=
 
           function add_msg_block() {
-            local icon="$1"
-            local title="$2"
-            local -n arr="$3"
+            local icon=$1
+            local title=$2
+            local -n arr=$3
 
-            [[ "${#arr[@]}" -eq 0 ]] && return
+            [[ ${#arr[@]} -eq 0 ]] && return
 
-            MSG="${MSG}"$'\n'"<b>${icon} ${title} ( ${#arr[@]} ):</b>"
+            MSG=${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>
 
-            for repo in "${arr[@]}"; do
-              MSG="${MSG}"$'\n'"• <code>$repo</code>"
+            for repo in ${arr[@]}; do
+              MSG=${MSG}$'\n'• <code>$repo</code>
             done
           }
 
@@ -94,9 +94,9 @@ jobs:
           add_msg_block "⚠️" "跳过" SKIPPED_REPOS
           add_msg_block "❌" "失败" FAILED_REPOS
 
-          [[ -z "$MSG" ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
+          [[ -z $MSG ]] && MSG=$'\n'<b>⚠️ 本次无同步任务执行</b>
 
-          printf "TG_MSG<<EOF\n%b\nEOF\n" "$MSG" >>"$GITHUB_ENV"
+          printf "TG_MSG<<EOF\n%b\nEOF\n" $MSG >>$GITHUB_ENV
 
       - name: 发送同步结果至 Telegram
         uses: appleboy/telegram-action@v1.0.1
