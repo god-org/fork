@@ -19,6 +19,7 @@ jobs:
 
       - name: 自动同步所有 Fork 仓库
         run: |
+          set -x
           OWNERS=(zzzzzzqqq8 dog-org)
 
           echo "### 🔄 同步任务汇总" >>$GITHUB_STEP_SUMMARY
@@ -45,22 +46,22 @@ jobs:
 
               echo "🚀 正在同步 $repo_name [ $branch ]..."
 
-              response="$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
+              response=$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
                 -X POST \
                 -H "Authorization: Bearer $GH_TOKEN" \
-                "https://api.github.com/repos/$repo_name/merge-upstream" \
-                -d "{\"branch\":\"$branch\"}")"
+                https://api.github.com/repos/$repo_name/merge-upstream \
+                -d "{\"branch\":\"$branch\"}")
 
-              case "$response" in
+              case $response in
                 200|202)
                   status="✅ 成功"
                   msg="同步成功"
-                  SUCCESS_REPOS+=("$repo_name")
+                  SUCCESS_REPOS+=($repo_name)
                   ;;
                 409)
                   status="⚠️ 跳过"
                   msg="已是最新"
-                  SKIPPED_REPOS+=("$repo_name")
+                  SKIPPED_REPOS+=($repo_name)
                   ;;
                 *)
                   status="❌ 失败"
@@ -69,9 +70,9 @@ jobs:
                   ;;
               esac
 
-              echo "| $repo_name | $branch | $status | $msg |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| $repo_name | $branch | $status | $msg |" >>$GITHUB_STEP_SUMMARY
 
-            done < <(gh repo list "$user" --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
+            done < <(gh repo list $user --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
           done
 
           MSG=
