@@ -48,19 +48,19 @@ jobs:
               response="$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
                 -X POST \
                 -H "Authorization: Bearer $GH_TOKEN" \
-                https://api.github.com/repos/$repo_name/merge-upstream \
+                "https://api.github.com/repos/$repo_name/merge-upstream" \
                 -d "{\"branch\":\"$branch\"}")"
 
-              case $response in
+              case "$response" in
                 200|202)
                   status="✅ 成功"
                   msg="同步成功"
-                  SUCCESS_REPOS+=($repo_name)
+                  SUCCESS_REPOS+=("$repo_name")
                   ;;
                 409)
                   status="⚠️ 跳过"
                   msg="已是最新"
-                  SKIPPED_REPOS+=($repo_name)
+                  SKIPPED_REPOS+=("$repo_name")
                   ;;
                 *)
                   status="❌ 失败"
@@ -69,24 +69,24 @@ jobs:
                   ;;
               esac
 
-              echo "| $repo_name | $branch | $status | $msg |" >>$GITHUB_STEP_SUMMARY
+              echo "| $repo_name | $branch | $status | $msg |" >>"$GITHUB_STEP_SUMMARY"
 
-            done < <(gh repo list $user --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
+            done < <(gh repo list "$user" --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
           done
 
-          MSG=
+          MSG=""
 
           function add_msg_block() {
-            local icon=$1
-            local title=$2
-            local -n arr=$3
+            local icon="$1"
+            local title="$2"
+            local -n arr="$3"
 
-            [[ ${#arr[@]} -eq 0 ]] && return
+            [[ "${#arr[@]}" -eq 0 ]] && return
 
-            MSG=${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>
+            MSG="${MSG}"$'\n'"<b>${icon} ${title} ( ${#arr[@]} ):</b>"
 
-            for repo in ${arr[@]}; do
-              MSG=${MSG}$'\n'• <code>$repo</code>
+            for repo in "${arr[@]}"; do
+              MSG="${MSG}"$'\n'"• <code>$repo</code>"
             done
           }
 
@@ -94,9 +94,9 @@ jobs:
           add_msg_block "⚠️" "跳过" SKIPPED_REPOS
           add_msg_block "❌" "失败" FAILED_REPOS
 
-          [[ -z $MSG ]] && MSG=$'\n'<b>⚠️ 本次无同步任务执行</b>
+          [[ -z "$MSG" ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
 
-          printf "TG_MSG<<EOF\n%b\nEOF\n" $MSG >>$GITHUB_ENV
+          printf "TG_MSG<<EOF\n%b\nEOF\n" "$MSG" >>"$GITHUB_ENV"
 
       - name: 发送同步结果至 Telegram
         uses: appleboy/telegram-action@v1.0.1
