@@ -23,4 +23,4 @@ jobs:
 
       - name: 自动合并 Dependabot 的 PR
         run: |
-          gh pr merge --auto --merge "${{ github.event.pull_request.html_url }}"
+          gh pr merge --auto --merge ${{ github.event.pull_request.html_url }}

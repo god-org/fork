@@ -2,7 +2,7 @@ name: Delete
 
 on:
   schedule:
-    - cron: "0 0 * * 0"
+    - cron: 0 0 * * 0
   workflow_dispatch:
 
 env:
@@ -20,12 +20,12 @@ jobs:
       - name: 检查仓库资源状态
         id: status
         run: |
-          RUN_COUNT="$(gh run list --limit 2 2>/dev/null | wc -l)"
-          REL_COUNT="$(gh release list --limit 1 2>/dev/null | wc -l)"
-          PKG_COUNT="$(gh api "/orgs/${{ github.repository_owner }}/packages/container/${{ github.event.repository.name }}" &>/dev/null && echo 1 || echo 0)"
-          echo "run_count=$RUN_COUNT" >>"$GITHUB_OUTPUT"
-          echo "rel_count=$REL_COUNT" >>"$GITHUB_OUTPUT"
-          echo "pkg_count=$PKG_COUNT" >>"$GITHUB_OUTPUT"
+          RUN_COUNT=$(gh run list --limit 2 2>/dev/null | wc -l)
+          REL_COUNT=$(gh release list --limit 1 2>/dev/null | wc -l)
+          PKG_COUNT=$(gh api "/orgs/${{ github.repository_owner }}/packages/container/${{ github.event.repository.name }}" &>/dev/null && echo 1 || echo 0)
+          echo "run_count=$RUN_COUNT" >>$GITHUB_OUTPUT
+          echo "rel_count=$REL_COUNT" >>$GITHUB_OUTPUT
+          echo "pkg_count=$PKG_COUNT" >>$GITHUB_OUTPUT
 
       - name: 清理工作流运行记录
         if: steps.status.outputs.run_count > 1

@@ -2,7 +2,7 @@ name: Fork
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: 0 0 * * *
   workflow_dispatch:
 
 env:
@@ -21,72 +21,72 @@ jobs:
         run: |
           OWNERS=(zzzzzzqqq8 dog-org)
 
-          echo "### 🔄 同步任务汇总" >>"$GITHUB_STEP_SUMMARY"
-          echo "| 仓库 | 分支 | 状态 | 详情 |" >>"$GITHUB_STEP_SUMMARY"
-          echo "| :--- | :--- | :--- | :--- |" >>"$GITHUB_STEP_SUMMARY"
+          echo "### 🔄 同步任务汇总" >>$GITHUB_STEP_SUMMARY
+          echo "| 仓库 | 分支 | 状态 | 详情 |" >>$GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >>$GITHUB_STEP_SUMMARY
 
           SUCCESS_REPOS=()
           SKIPPED_REPOS=()
           FAILED_REPOS=()
 
-          for user in "${OWNERS[@]}"; do
+          for user in ${OWNERS[@]}; do
             echo "🔎 正在处理用户：$user"
 
-            case "$user" in
-              zzzzzzqqq8) export GH_TOKEN="${{ secrets.ZZQ_TOKEN }}" ;;
-              dog-org) export GH_TOKEN="${{ secrets.DOG_TOKEN }}" ;;
+            case $user in
+              zzzzzzqqq8) export GH_TOKEN=${{ secrets.ZZQ_TOKEN }} ;;
+              dog-org) export GH_TOKEN=${{ secrets.DOG_TOKEN }} ;;
               *) continue ;;
             esac
 
             while read -r row; do
-              [[ -z "$row" ]] && continue
-              repo_name="${row%,*}"
-              branch="${row#*,}"
+              [[ -z $row ]] && continue
+              repo_name=${row%,*}
+              branch=${row#*,}
 
               echo "🚀 正在同步 $repo_name [ $branch ]..."
 
-              response="$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
+              response=$(curl -sSL -o /tmp/resp.json -w "%{http_code}" \
                 -X POST \
                 -H "Authorization: Bearer $GH_TOKEN" \
-                "https://api.github.com/repos/$repo_name/merge-upstream" \
-                -d "{\"branch\":\"$branch\"}")"
+                https://api.github.com/repos/$repo_name/merge-upstream \
+                -d "{\"branch\":\"$branch\"}")
 
-              case "$response" in
+              case $response in
                 200|202)
                   status="✅ 成功"
                   msg="同步成功"
-                  SUCCESS_REPOS+=("$repo_name")
+                  SUCCESS_REPOS+=($repo_name)
                   ;;
                 409)
                   status="⚠️ 跳过"
                   msg="已是最新"
-                  SKIPPED_REPOS+=("$repo_name")
+                  SKIPPED_REPOS+=($repo_name)
                   ;;
                 *)
                   status="❌ 失败"
-                  msg="$(jq -r '.message' /tmp/resp.json 2>/dev/null || echo "HTTP $response")"
+                  msg=$(jq -r '.message' /tmp/resp.json 2>/dev/null || echo "HTTP $response")
                   FAILED_REPOS+=("$repo_name ($msg)")
                   ;;
               esac
 
-              echo "| $repo_name | $branch | $status | $msg |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| $repo_name | $branch | $status | $msg |" >>$GITHUB_STEP_SUMMARY
 
-            done < <(gh repo list "$user" --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
+            done < <(gh repo list $user --fork --limit 1000 --json nameWithOwner,defaultBranchRef --jq '.[] | "\(.nameWithOwner),\(.defaultBranchRef.name)"' | sort -f)
           done
 
-          MSG=""
+          MSG=
 
           function add_msg_block() {
-            local icon="$1"
-            local title="$2"
-            local -n arr="$3"
+            local icon=$1
+            local title=$2
+            local -n arr=$3
 
-            [[ "${#arr[@]}" -eq 0 ]] && return
+            [[ ${#arr[@]} -eq 0 ]] && return
 
-            MSG="${MSG}"$'\n'"<b>${icon} ${title} ( ${#arr[@]} ):</b>"
+            MSG=${MSG}$'\n'<b>${icon} ${title} ( ${#arr[@]} ):</b>
 
-            for repo in "${arr[@]}"; do
-              MSG="${MSG}"$'\n'"• <code>$repo</code>"
+            for repo in ${arr[@]}; do
+              MSG=${MSG}$'\n'• <code>$repo</code>
             done
           }
 
@@ -94,9 +94,9 @@ jobs:
           add_msg_block "⚠️" "跳过" SKIPPED_REPOS
           add_msg_block "❌" "失败" FAILED_REPOS
 
-          [[ -z "$MSG" ]] && MSG=$'\n'"<b>⚠️ 本次无同步任务执行</b>"
+          [[ -z $MSG ]] && MSG=$'\n'<b>⚠️ 本次无同步任务执行</b>
 
-          printf "TG_MSG<<EOF\n%b\nEOF\n" "$MSG" >>"$GITHUB_ENV"
+          printf "TG_MSG<<EOF\n%b\nEOF\n" $MSG >>$GITHUB_ENV
 
       - name: 发送同步结果至 Telegram
         uses: appleboy/telegram-action@v1.0.1
