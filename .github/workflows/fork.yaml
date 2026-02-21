@@ -97,7 +97,7 @@ jobs:
 
           [[ -z $MSG ]] && MSG="$'\n'<b>⚠️ 本次无同步任务执行</b>"
 
-          printf "TG_MSG<<EOF\n%b\nEOF\n" $MSG >>$GITHUB_ENV
+          printf "TG_MSG<<EOF\n%b\nEOF\n" "$MSG" >>$GITHUB_ENV
 
       - name: 发送同步结果至 Telegram
         uses: appleboy/telegram-action@v1.0.1
