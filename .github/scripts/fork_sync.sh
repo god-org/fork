@@ -40,7 +40,8 @@ function main() {
 
   temp_resp="$(mktemp)"
   chmod 0600 "${temp_resp}"
-  trap 'rm -f "${temp_resp}"' EXIT
+  # shellcheck disable=SC2064
+  trap "rm -f '${temp_resp}'" EXIT
 
   owners=('zzzzzzqqq8' 'dog-org')
 
