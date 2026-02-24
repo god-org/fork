@@ -11,6 +11,7 @@ function log() {
   echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] ✅：${*}。"
 }
 
+# shellcheck disable=SC2329
 function error() {
   echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] ❌：${*}。" >&2
 }

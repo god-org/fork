@@ -19,15 +19,12 @@ jobs:
       - name: 自动同步所有 Fork 仓库
         shell: bash
         env:
+          SCRIPT_FILE: ./.github/scripts/fork_sync.sh
           ZZQ_TOKEN: ${{ secrets.ZZQ_TOKEN }}
           DOG_TOKEN: ${{ secrets.DOG_TOKEN }}
         run: |
-          script_file='./.github/scripts/fork_sync.sh'
-          if [[ ! -x "${script_file}" ]]; then
-            chmod +x "${script_file}"
-          fi
-          "${script_file}"
-          unset script_file
+          [[ ! -x "${SCRIPT_FILE}" ]] && chmod +x "${SCRIPT_FILE}"
+          "${SCRIPT_FILE}"
 
       - name: 发送同步结果至 Telegram
         uses: appleboy/telegram-action@v1.0.1
