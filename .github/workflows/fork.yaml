@@ -23,6 +23,7 @@ jobs:
           ZZQ_TOKEN: ${{ secrets.ZZQ_TOKEN }}
           DOG_TOKEN: ${{ secrets.DOG_TOKEN }}
         run: |
+          set -euxo pipefail
           [[ ! -x "${SCRIPT_FILE}" ]] && chmod +x "${SCRIPT_FILE}"
           "./${SCRIPT_FILE}"
 
