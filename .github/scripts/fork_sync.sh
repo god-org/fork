@@ -17,11 +17,11 @@ msg_add() {
 }
 
 main() {
-  local succ_list skip_list fail_list conf_raw conf_list conf_row user_name tok_key \
-    tok_val repo_raw repo_list repo_item repo_path repo_br res_raw res_rc res_stat msg_body
+  local succ_list hard_list fail_list conf_raw conf_list conf_row user_name tok_key \
+    tok_val repo_raw repo_list repo_item repo_path repo_br res_stat msg_body
 
   lib::need_f "$CONF_FILE"
-  succ_list=() skip_list=() fail_list=()
+  succ_list=() hard_list=() fail_list=()
   printf '%s\n' '### 🔄 同步汇总' '| 仓库 | 状态 |' '| :--- | :--- |' >>"$GITHUB_STEP_SUMMARY"
 
   mapfile -t conf_raw <"$CONF_FILE"
@@ -52,34 +52,26 @@ main() {
       repo_br=${repo_item#*:}
 
       lib::log_inf "开始同步：$repo_path [ $repo_br ]"
-      res_raw=$(GH_TOKEN=$tok_val gh api -X POST "/repos/$repo_path/merge-upstream" \
-        -f "branch=$repo_br" -i --silent || :)
-      res_rc=${res_raw#* }
-      res_rc=${res_rc%% *}
 
-      case $res_rc in
-      200)
+      if GH_TOKEN=$tok_val gh repo sync "$repo_path" -b "$repo_br"; then
         res_stat='✅ 成功'
         succ_list+=("$repo_item")
-        ;;
-      409)
-        res_stat='⚠️ 冲突'
-        skip_list+=("$repo_item")
-        ;;
-      *)
+      elif GH_TOKEN=$tok_val gh repo sync "$repo_path" -b "$repo_br" --force; then
+        res_stat='🔥 强制'
+        hard_list+=("$repo_item")
+      else
         res_stat='❌ 失败'
         fail_list+=("$repo_item")
-        ;;
-      esac
+      fi
 
       printf '| %s | %s |\n' "$repo_item" "$res_stat"
     done
   done >>"$GITHUB_STEP_SUMMARY"
 
-  [[ $F_NTFY == true ]] || ((${#skip_list[@]} || ${#fail_list[@]})) || return 0
+  [[ $F_NTFY == true ]] || ((${#hard_list[@]} || ${#fail_list[@]})) || return 0
 
   msg_add '✅ 成功' succ_list msg_body
-  msg_add '⚠️ 冲突' skip_list msg_body
+  msg_add '🔥 强制' hard_list msg_body
   msg_add '❌ 失败' fail_list msg_body
 
   printf '%s\n' 'msg<<EOF' "$msg_body" 'EOF' >>"$GITHUB_OUTPUT"
