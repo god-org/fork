@@ -39,7 +39,7 @@ main() {
 
     lib::log_inf "处理用户：$user_name"
     repo_raw=$(gh repo list "$user_name" -L 1000 --fork --json nameWithOwner,defaultBranchRef \
-      -q '.[] | "\(.nameWithOwner):\(.defaultBranchRef.name)"' | sort -f || :)
+      -q '.[] | "\(.nameWithOwner):\(.defaultBranchRef.name)"' | sort -f)
 
     [[ $repo_raw ]] || {
       lib::log_wrn "无 Fork 仓库：$user_name"
